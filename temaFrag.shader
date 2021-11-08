@@ -31,10 +31,15 @@ void main(void)
 	}
 	case 3:
 	{
-		out_Color = vec4(0.3, 0.4, 0.7, 0.0);
+		out_Color = vec4(0.0, 1, 0.0, 0.0);
 		break;
 	}
-	case 4:  // Gradient case 
+	case 4:
+	{
+		out_Color = vec4(1.0, 1.0, 1.0, 0.0);
+		break;
+	}
+	case 5:  // Gradient case 
 	{
 		vec2 coord = gl_FragCoord.xy / u_resolution;
 
