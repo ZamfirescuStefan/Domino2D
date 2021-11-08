@@ -6,6 +6,7 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <sstream>
 
 #include "glm/glm/glm.hpp"  
 #include "glm/glm/gtc/matrix_transform.hpp"
@@ -19,13 +20,13 @@ const float C_PI = 3.141592f;
 const glm::mat4 C_IDENTITY_MATRIX = glm::mat4(1);
 
 // Apps parameters
+const int C_NUM_MAX_PIECES = 20;
 const int C_WIDTH = 800;
 const int C_HEIGHT = 600;
 const int C_REFRESH_TIME = 25;
 const float C_ANGLE_OFFSET = 5.0F;
 const float C_STOP_ROTATION_ANGLE = 75.0F;
-
-
+int num_of_pieces;
 //////////////////////////////////////
 
 GLuint
@@ -34,14 +35,15 @@ GLuint
 	ColorBufferId,
 	ProgramId;
 
-glm::mat4 resizeMatrix, matrRot;
+glm::mat4 resizeMatrix, matrRot, trans;
 glm::vec3 scalePoint = glm::vec3(55.0f, 45.0f, 0.0f);
+glm::vec3 rotatePoint;
 
-
+float angles[20];
 float angle1 = 0.0F;
 float angle2 = 0.0F;
+float angle3 = 0.0F;
 bool start = false;
-
 
 void Initialize();
 
@@ -51,10 +53,26 @@ void MouseAction(int, int, int, int);
 
 void Cleanup();
 
-void Timer(int value);
+void AnglesUpdate(int value);
 
-int main(int argc, char* argv[])
-{
+bool ValidInput(const int& input) {
+
+	int num = input;
+	if (num <= 0 || num > 15){
+		return false;
+	}
+	return true;
+}
+
+int main(int argc, char* argv[]) {
+
+	std::cout << "Introduceti numarul de piese: (15 piese maxim)\n";
+	std::cin >> num_of_pieces;
+	while (!ValidInput(num_of_pieces)) {
+		std::cout << "Numarul introdus este invalid, incercati din nou\n";
+		std::cin >> num_of_pieces;
+	}
+	
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -65,14 +83,13 @@ int main(int argc, char* argv[])
 	glutMouseFunc(MouseAction);
 	glewInit();
 	Initialize();
-    glutTimerFunc(0, Timer, 0);
+    glutTimerFunc(0, AnglesUpdate, 0);
 	glutMainLoop();
 	glutCloseFunc(Cleanup);
 
 }
 
-void CreateVBO(void)
-{
+void CreateVBO(void) {
 	GLfloat Vertices[] = {
 		// background  
 	   -1600.0f, -1200.0f, 0.0f, 1.0f,
@@ -122,8 +139,7 @@ void CreateVBO(void)
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
 }
 
-void DestroyVBO(void)
-{
+void DestroyVBO(void) {
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(0);
 
@@ -135,15 +151,13 @@ void DestroyVBO(void)
 	glDeleteVertexArrays(1, &VaoId);
 }
 
-void CreateShaders(void)
-{
+void CreateShaders(void) {
 	ProgramId = LoadShaders("temaVert.shader", "temaFrag.shader");
 	glUseProgram(ProgramId);
 }
 
 
-void DestroyShaders(void)
-{
+void DestroyShaders(void) {
 	glDeleteProgram(ProgramId);
 }
 
@@ -167,8 +181,7 @@ glm::mat4 TranslThePoint(const glm::vec3& vec, const int& type = 0) {
 	}
 }
 
-void Initialize(void)
-{
+void Initialize(void) {
 	resizeMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.f / C_WIDTH, 1.f / C_HEIGHT, 1.0));
 
 	// pentru ex 3 
@@ -195,9 +208,9 @@ void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatri
 	glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &iMatrix[0][0]);
 }
 
-void RenderFunction(void)
-{
-	glm::vec3 rotatePoint = glm::vec3(-180.0F, -100.0F, 0.0F);
+void RenderFunction(void) {
+	rotatePoint = glm::vec3(-180.0F, -100.0F, 0.0F);
+	trans = glm::mat4(1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	Load4x4MatrixToVertShader("resizeMatrix", resizeMatrix);
@@ -211,41 +224,44 @@ void RenderFunction(void)
 
 	LoadUniformVar<int>(ProgramId, "codCol", 1);
 	glPointSize(10.0);
-	// corner points
 	// axes 
-	glDrawArrays(GL_LINES, 6, 4);
+	// glDrawArrays(GL_LINES, 6, 4);
 
 	// First domino piece 
-	if (angle1 == 0) {
-		LoadUniformVar<int>(ProgramId, "codCol", 1);
-	}
-	else {
-		LoadUniformVar<int>(ProgramId, "codCol", 2);
-	}
-	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angle1), glm::vec3(0.0, 0.0, 1.0));
-	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(rotatePoint, 1) * matrRot * TranslThePoint(rotatePoint, 0));
-	glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
+	for (int i = 0; i < num_of_pieces; i++) {
+		if (i == 0) {
+			if (angles[i] == 0) {
+				LoadUniformVar<int>(ProgramId, "codCol", 1);
+			}
+			else {
+				LoadUniformVar<int>(ProgramId, "codCol", 2);
+			}
+			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
+			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(rotatePoint, 1) * matrRot * TranslThePoint(rotatePoint, 0));
+			glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
 
-	if (angle2 == 0) {
-		LoadUniformVar<int>(ProgramId, "codCol", 1);
-	}
-	else {
-		LoadUniformVar<int>(ProgramId, "codCol", 2);
-	}
+		}
+		else {
+			if (angles[i] == 0) {
+				LoadUniformVar<int>(ProgramId, "codCol", 1);
+			}
+			else {
+				LoadUniformVar<int>(ProgramId, "codCol", 2);
+			}
 
-	rotatePoint += glm::vec3(80.0F, 0.0F, 0.0F);
-	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angle2), glm::vec3(0.0, 0.0, 1.0));
-	glm::mat4 trans = glm::translate(glm::mat4(1.0f), glm::vec3(80.0F, 0.0F, 0.0F));
-	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(rotatePoint, 1) * matrRot * TranslThePoint(rotatePoint, 0) * trans);
-	glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
-
+			rotatePoint += glm::vec3(80.0F, 0.0F, 0.0F);
+			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
+			trans *= glm::translate(glm::mat4(1.0f), glm::vec3(80.0F, 0.0F, 0.0F));
+			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(rotatePoint, 1) * matrRot * TranslThePoint(rotatePoint, 0) * trans);
+			glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
+		}
+	}
 
 	glutPostRedisplay();
 	glFlush();
 }
 
-void Cleanup(void)
-{
+void Cleanup(void) {
 	DestroyShaders();
 	DestroyVBO();
 }
@@ -258,13 +274,18 @@ void MouseAction(int button, int state, int x, int y) {
 	}
 }
 
-void Timer(int value) {
+void AnglesUpdate(int value) {
 	glutPostRedisplay();
-	if (start == 1 && angle1 < C_STOP_ROTATION_ANGLE) {
-		angle1 += C_ANGLE_OFFSET;
+	for (int i = 0; i < num_of_pieces; i++) {
+		if (
+			(1 == start && 0 == i && angles[i] < C_STOP_ROTATION_ANGLE) ||       // for first piece 
+			(num_of_pieces - 1 == i && num_of_pieces > 1 && angles[i - 1] > 30 && angles[i] < 90) ||	 // for last piece
+			(start == 1 && num_of_pieces == 1 && angles[i] < 90) ||				 // edge case, when it's a single piece 
+			(angles[i - 1] > 30 && angles[i] < C_STOP_ROTATION_ANGLE))           // for the others pieces 
+		{
+			angles[i] += C_ANGLE_OFFSET;
+		}
 	}
-	if (angle1 > 30 && angle2 < 90) {
-		angle2 += C_ANGLE_OFFSET;
-	}
-	glutTimerFunc(C_REFRESH_TIME, Timer, 0);
+
+	glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);
 }
