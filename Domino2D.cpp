@@ -20,7 +20,7 @@ const float C_PI = 3.141592f;
 const glm::mat4 C_IDENTITY_MATRIX = glm::mat4(1);
 
 // Apps parameters
-const int C_NUM_MAX_PIECES = 20;
+const int C_NUM_MAX_PIECES = 15;
 const int C_WIDTH = 800;
 const int C_HEIGHT = 600;
 const int C_REFRESH_TIME = 25;
@@ -55,24 +55,32 @@ void Cleanup();
 
 void AnglesUpdate(int value);
 
-bool ValidInput(const int& input) {
+bool ValidInput(const std::string& input) {
 
-	int num = input;
-	if (num <= 0 || num > 15){
+	for (const char& chr: input) {
+		if (!std::isdigit(chr)) {
+			return false;
+		}
+	}
+
+	int number = std::stoi(input);
+	if (number <= 0 || number > C_NUM_MAX_PIECES) {
 		return false;
 	}
+
 	return true;
 }
 
 int main(int argc, char* argv[]) {
-
-	std::cout << "Introduceti numarul de piese: (15 piese maxim)\n";
-	std::cin >> num_of_pieces;
-	while (!ValidInput(num_of_pieces)) {
-		std::cout << "Numarul introdus este invalid, incercati din nou\n";
-		std::cin >> num_of_pieces;
-	}
 	
+	std::string input;
+	std::cout << "Introduceti numarul de piese: (15 piese maxim)\n";
+	std::cin >> input;
+	while (!ValidInput(input)) {
+		std::cout << "Numarul introdus este invalid, incercati din nou\n";
+		std::cin >> input;
+	}
+	num_of_pieces = std::stoi(input);
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
