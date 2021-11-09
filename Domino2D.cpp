@@ -19,19 +19,30 @@
 const float C_PI = 3.141592f;
 const glm::mat4 C_IDENTITY_MATRIX = glm::mat4(1);
 
-// Apps parameters
+// Window params
 const int C_WINDOW_WIDTH = 800;
 const int C_WINDOW_HEIGHT = 600;
-const float C_PIECE_HEIGHT = 120.0F;
-const float C_PIECE_WIDTH = 20.0F;
-const float C_SPACE_BETWEEN_PIECES = 80.0F;
 
+//Draw params
 const int C_REFRESH_TIME = 25;
 const int C_NUM_MAX_PIECES = 12;
-const float C_ANGLE_OFFSET = 5.0F;
+
+//Angles variables
 const float C_STOP_ROTATION_ANGLE = 75.0F;
 const float C_STOP_ROTATION_ANGLE_LAST_PIECE = 90.0F;
 const float C_ANGLE_TO_ACTIVATE_NEXT_PIECE = 30.0F;
+
+// Domino piece params
+const float C_PIECE_HEIGHT = 120.0F;
+const float C_PIECE_WIDTH = 20.0F;
+const float C_SPACE_BETWEEN_PIECES = 80.0F;
+const float C_DOMINO_ANGLE_OFFSET = 5.0F;
+
+// Pendul params
+const float C_SUPORT_PENDUL_X_COORD_OFFSET = 30.0F;
+const float C_SUPORT_PENDUL_Y_COORD_OFFSET = 250.0F;
+const float C_PENDUL_X_COORD_OFFSET = 150.0F;
+const float C_PENDUL_ANGLE_OFFSET = 5.0F;
 
 //////////////////////////////////////
 
@@ -42,11 +53,6 @@ glm::vec3 pendulRotatePoint;
 
 float suportPendulXPos;
 float suportPendulYPos;
-const float C_SUPORT_PENDUL_X_COORD_OFFSET = 30.0F;
-const float C_SUPORT_PENDUL_Y_COORD_OFFSET = 250.0F;
-const float C_PENDUL_X_COORD_OFFSET = 150.0F;
-const float C_PENDUL_ANGLE_OFFSET = 5.0F;
-
 glm::vec3 PendulRotatePoint;
 
 
@@ -65,7 +71,7 @@ enum Colors {
 	Red,
 	Green,
 	White,
-	Gradient
+	Gradient,
 };
 
 void Initialize();
@@ -74,13 +80,20 @@ void RenderFunction();
 
 void MouseAction(int, int, int, int);
 
+void CreateVBO(void);
+
 void Cleanup();
 
+bool ValidInput(const std::string& input);
+ 
 void AnglesUpdate(int input);
 
-bool ValidInput(const std::string& input);
-
 void PendulUpdate(int input);
+
+template<class T>
+void LoadUniformVar(const GLuint& programId, const std::string& name, T value);
+
+void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatrix);
 
 int main(int argc, char* argv[]) {
 	
@@ -206,7 +219,7 @@ void DestroyShaders(void) {
 	glDeleteProgram(ProgramId);
 }
 
-glm::mat4 TranslThePoint(const glm::vec3& vec, const int& type = 0) {
+glm::mat4 TranslThePoint(const glm::vec3& vec, const int& type = 0) { 
 	switch (type) {
 	case 0:
 	{
@@ -261,6 +274,10 @@ void RenderFunction(void) {
 	trans = glm::mat4(1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	LoadUniformVar<int>(ProgramId, "windowHeight", C_WINDOW_HEIGHT);
+	LoadUniformVar<int>(ProgramId, "windowWidth", C_WINDOW_WIDTH);
+
+
 	Load4x4MatrixToVertShader("resizeMatrix", resizeMatrix);
 	Load4x4MatrixToVertShader("myMatrix", C_IDENTITY_MATRIX);
 
@@ -269,22 +286,29 @@ void RenderFunction(void) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 	glDrawArrays(GL_TRIANGLE_STRIP, 3, 3);
 
-
-	LoadUniformVar<int>(ProgramId, "codCol", Black);
-	glPointSize(30.0F);
-	// glDrawArrays(GL_POINTS, 14, 1);
-
-	// Draw pendul 
-	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngel), glm::vec3(0.0, 0.0, 1.0));
-	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pendulRotatePoint, 1) * matrRot * TranslThePoint(pendulRotatePoint, 0));
-	LoadUniformVar<int>(ProgramId, "codCol", Black);
-	glPointSize(30.0F);
-	glDrawArrays(GL_POINTS, 15, 1);
-
-
 	// axes 
 	// LoadUniformVar<int>(ProgramId, "codCol", Black);
 	// glDrawArrays(GL_LINES, 6, 4);
+
+	//Draw pendul support 
+	//LoadUniformVar<int>(ProgramId, "codCol", Black);
+	//glPointSize(30.0F);
+	// glDrawArrays(GL_POINTS, 14, 1);
+
+
+	// Draw pendul 
+	if (pendulAngel) {
+		LoadUniformVar<int>(ProgramId, "codCol", White);
+	}
+	else {
+		LoadUniformVar<int>(ProgramId, "codCol", Black);
+	}
+	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngel), glm::vec3(0.0, 0.0, 1.0));
+	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pendulRotatePoint, 1) * matrRot * TranslThePoint(pendulRotatePoint, 0));
+	glEnable(GL_POINT_SMOOTH);
+	glPointSize(30.0F);
+	glDrawArrays(GL_POINTS, 15, 1);
+
 
 	// Draw domino pieces
 	for (int i = 0; i < numOfPieces; i++) {
@@ -328,9 +352,7 @@ void Cleanup(void) {
 void MouseAction(int button, int state, int x, int y) {
 	if (GLUT_LEFT_BUTTON == button && GLUT_DOWN == state)
 	{
-		// startDomino = true;
 		startPendul = true;
-		std::cout << "Left click pressed\n";
 	}
 }
 
@@ -344,7 +366,7 @@ void AnglesUpdate(int input) {
 			(startDomino == 1 && numOfPieces == 1 && angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||				 // edge case, when it's a single piece 
 			(angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE && angles[i] < C_STOP_ROTATION_ANGLE))           // for the others pieces 
 		{
-			angles[i] += C_ANGLE_OFFSET;
+			angles[i] += C_DOMINO_ANGLE_OFFSET;
 		}
 	}
 	glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);

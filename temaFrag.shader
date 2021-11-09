@@ -6,10 +6,14 @@ precision medium float;
 #endif
 
 in vec4 ex_Color;
-uniform int codCol;
-
 out vec4 out_Color;
-vec2 u_resolution = {800, 600};
+
+
+uniform int codCol;
+uniform int windowHeight;
+uniform int windowWidth;
+vec2 u_resolution = { windowHeight, windowWidth };
+
 
 void main(void)
 {
