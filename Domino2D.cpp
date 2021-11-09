@@ -27,23 +27,37 @@ const float C_PIECE_WIDTH = 20.0F;
 const float C_SPACE_BETWEEN_PIECES = 80.0F;
 
 const int C_REFRESH_TIME = 25;
-const int C_NUM_MAX_PIECES = 20;
+const int C_NUM_MAX_PIECES = 12;
 const float C_ANGLE_OFFSET = 5.0F;
 const float C_STOP_ROTATION_ANGLE = 75.0F;
+const float C_STOP_ROTATION_ANGLE_LAST_PIECE = 90.0F;
+const float C_ANGLE_TO_ACTIVATE_NEXT_PIECE = 30.0F;
 
 //////////////////////////////////////
 
 GLuint VaoId, VboId, ColorBufferId, ProgramId;
 glm::mat4 resizeMatrix, matrRot, trans;
-glm::vec3 rotatePoint;
+glm::vec3 pieceRotatePoint;
+glm::vec3 pendulRotatePoint;
+
+float suportPendulXPos;
+float suportPendulYPos;
+const float C_SUPORT_PENDUL_X_COORD_OFFSET = 30.0F;
+const float C_SUPORT_PENDUL_Y_COORD_OFFSET = 250.0F;
+const float C_PENDUL_X_COORD_OFFSET = 150.0F;
+const float C_PENDUL_ANGLE_OFFSET = 5.0F;
+
+glm::vec3 PendulRotatePoint;
+
 
 
 float angles[C_NUM_MAX_PIECES];
-int num_of_pieces;
+int numOfPieces;
 bool startDomino = false;
-
-float x_pos = -400.0F;
-float y_pos = -100.0F;
+bool startPendul = false;
+float dominoXPos = -400.0F;
+float dominoYPos = -100.0F;
+float pendulAngel = 0.0F;
 
 enum Colors {
 	Black = 0,
@@ -62,25 +76,26 @@ void MouseAction(int, int, int, int);
 
 void Cleanup();
 
-void AnglesUpdate(int value);
+void AnglesUpdate(int input);
 
 bool ValidInput(const std::string& input);
 
-
+void PendulUpdate(int input);
 
 int main(int argc, char* argv[]) {
 	
 	std::string input;
-	std::cout << "Introduceti numarul de piese: (15 piese maxim)\n";
+	std::cout << "Introduceti numarul de piese: (" << C_NUM_MAX_PIECES << " piese maxim)\n";
 	std::cin >> input;
 	while (!ValidInput(input)) {
 		std::cout << "Numarul introdus este invalid, incercati din nou\n";
 		std::cin >> input;
 	}
-	num_of_pieces = std::stoi(input);
+	numOfPieces = std::stoi(input);
+
 
 	// Calculate the position for the first piece  
-	x_pos = (2 * C_WINDOW_WIDTH - (num_of_pieces * C_PIECE_WIDTH + (num_of_pieces - 1) * C_SPACE_BETWEEN_PIECES)) / 2 - 800 + C_SPACE_BETWEEN_PIECES;
+	dominoXPos = (2 * C_WINDOW_WIDTH - (numOfPieces * C_PIECE_WIDTH + (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES)) / 2 - 800;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -91,7 +106,7 @@ int main(int argc, char* argv[]) {
 	glutMouseFunc(MouseAction);
 	glewInit();
 	Initialize();
-    glutTimerFunc(0, AnglesUpdate, 0);
+	glutTimerFunc(C_REFRESH_TIME, PendulUpdate, 0);
 	glutMainLoop();
 	glutCloseFunc(Cleanup);
 
@@ -130,10 +145,15 @@ void CreateVBO(void) {
 	    0.0f,			 C_WINDOW_HEIGHT, 0.0f, 1.0f,
 
 	   // first domino piece
-	   x_pos,				  y_pos,				  0.0F, 1.0F,
-	   x_pos + C_PIECE_WIDTH, y_pos,				  0.0F, 1.0F,
-	   x_pos + C_PIECE_WIDTH, y_pos + C_PIECE_HEIGHT, 0.0F, 1.0F,
-	   x_pos,				  y_pos + C_PIECE_HEIGHT, 0.0F, 1.0F,
+	   dominoXPos,				   dominoYPos,				    0.0F, 1.0F,
+	   dominoXPos + C_PIECE_WIDTH, dominoYPos,				    0.0F, 1.0F,
+	   dominoXPos + C_PIECE_WIDTH, dominoYPos + C_PIECE_HEIGHT, 0.0F, 1.0F,
+	   dominoXPos,				   dominoYPos + C_PIECE_HEIGHT, 0.0F, 1.0F,
+
+	   // suport pendul center point
+	   suportPendulXPos,           suportPendulYPos,            0.0F, 1.0F,
+	   // pendul center point 
+	   suportPendulXPos - C_PENDUL_X_COORD_OFFSET, suportPendulYPos, 0.0F, 1.0F
 	};
 
 
@@ -210,6 +230,9 @@ void Initialize(void) {
 
 	resizeMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.f / C_WINDOW_WIDTH, 1.f / C_WINDOW_HEIGHT, 1.0));
 
+	suportPendulYPos = dominoYPos + C_SUPORT_PENDUL_Y_COORD_OFFSET;
+	suportPendulXPos = dominoXPos - C_SUPORT_PENDUL_X_COORD_OFFSET;
+
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 	CreateVBO();
 	CreateShaders();
@@ -233,7 +256,8 @@ void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatri
 }
 
 void RenderFunction(void) {
-	rotatePoint = glm::vec3(x_pos + C_PIECE_WIDTH, y_pos, 0.0F);
+	pieceRotatePoint = glm::vec3(dominoXPos + C_PIECE_WIDTH, dominoYPos, 0.0F);
+	pendulRotatePoint = glm::vec3(suportPendulXPos , suportPendulYPos , 0.0F);
 	trans = glm::mat4(1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -245,12 +269,25 @@ void RenderFunction(void) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 	glDrawArrays(GL_TRIANGLE_STRIP, 3, 3);
 
+
+	LoadUniformVar<int>(ProgramId, "codCol", Black);
+	glPointSize(30.0F);
+	// glDrawArrays(GL_POINTS, 14, 1);
+
+	// Draw pendul 
+	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngel), glm::vec3(0.0, 0.0, 1.0));
+	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pendulRotatePoint, 1) * matrRot * TranslThePoint(pendulRotatePoint, 0));
+	LoadUniformVar<int>(ProgramId, "codCol", Black);
+	glPointSize(30.0F);
+	glDrawArrays(GL_POINTS, 15, 1);
+
+
 	// axes 
 	// LoadUniformVar<int>(ProgramId, "codCol", Black);
 	// glDrawArrays(GL_LINES, 6, 4);
 
-	// First domino piece 
-	for (int i = 0; i < num_of_pieces; i++) {
+	// Draw domino pieces
+	for (int i = 0; i < numOfPieces; i++) {
 		if (i == 0) {
 			if (angles[i] == 0) {
 				LoadUniformVar<int>(ProgramId, "codCol", Blue);
@@ -259,7 +296,7 @@ void RenderFunction(void) {
 				LoadUniformVar<int>(ProgramId, "codCol", Red);
 			}
 			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
-			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(rotatePoint, 1) * matrRot * TranslThePoint(rotatePoint, 0));
+			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pieceRotatePoint, 1) * matrRot * TranslThePoint(pieceRotatePoint, 0));
 			glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
 
 		}
@@ -271,10 +308,10 @@ void RenderFunction(void) {
 				LoadUniformVar<int>(ProgramId, "codCol", Red);
 			}
 
-			rotatePoint += glm::vec3(80.0F, 0.0F, 0.0F);
+			pieceRotatePoint += glm::vec3(80.0F, 0.0F, 0.0F);
 			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
 			trans *= glm::translate(glm::mat4(1.0f), glm::vec3(C_SPACE_BETWEEN_PIECES, 0.0F, 0.0F));
-			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(rotatePoint, 1) * matrRot * TranslThePoint(rotatePoint, 0) * trans);
+			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pieceRotatePoint, 1) * matrRot * TranslThePoint(pieceRotatePoint, 0) * trans);
 			glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
 		}
 	}
@@ -291,23 +328,38 @@ void Cleanup(void) {
 void MouseAction(int button, int state, int x, int y) {
 	if (GLUT_LEFT_BUTTON == button && GLUT_DOWN == state)
 	{
-		startDomino = true;
+		// startDomino = true;
+		startPendul = true;
 		std::cout << "Left click pressed\n";
 	}
 }
 
-void AnglesUpdate(int value) {
+void AnglesUpdate(int input) {
 	glutPostRedisplay();
-	for (int i = 0; i < num_of_pieces; i++) {
+	for (int i = 0; i < numOfPieces; i++) {
 		if (
-			(1 == startDomino && 0 == i && angles[i] < C_STOP_ROTATION_ANGLE) ||       // for first piece 
-			(num_of_pieces - 1 == i && num_of_pieces > 1 && angles[i - 1] > 30 && angles[i] < 90) ||	 // for last piece
-			(startDomino == 1 && num_of_pieces == 1 && angles[i] < 90) ||				 // edge case, when it's a single piece 
-			(angles[i - 1] > 30 && angles[i] < C_STOP_ROTATION_ANGLE))           // for the others pieces 
+			(true == startDomino && 0 == i && angles[i] < C_STOP_ROTATION_ANGLE) ||       // for first piece 
+			(numOfPieces - 1 == i && numOfPieces > 1 && angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE
+									&& angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||	 // for last piece
+			(startDomino == 1 && numOfPieces == 1 && angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||				 // edge case, when it's a single piece 
+			(angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE && angles[i] < C_STOP_ROTATION_ANGLE))           // for the others pieces 
 		{
 			angles[i] += C_ANGLE_OFFSET;
 		}
 	}
-
 	glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);
+}
+ 
+void PendulUpdate (int input) {
+	if (startPendul == true && pendulAngel < C_STOP_ROTATION_ANGLE_LAST_PIECE) {
+		pendulAngel += C_PENDUL_ANGLE_OFFSET;
+	} 
+	if (pendulAngel == C_STOP_ROTATION_ANGLE_LAST_PIECE) {
+		startDomino = true;
+		glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);
+		return;
+	}
+	glutPostRedisplay();
+	glutTimerFunc(C_REFRESH_TIME, PendulUpdate, 0);
+
 }
