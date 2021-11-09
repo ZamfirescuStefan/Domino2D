@@ -25,7 +25,7 @@ const int C_WINDOW_HEIGHT = 600;
 
 //Draw params
 const int C_REFRESH_TIME = 25;
-const int C_NUM_MAX_PIECES = 12;
+const int C_NUM_MAX_PIECES = 15;
 
 //Angles variables
 const float C_STOP_ROTATION_ANGLE = 75.0F;
@@ -59,9 +59,9 @@ glm::vec3 PendulRotatePoint;
 
 float angles[C_NUM_MAX_PIECES];
 int numOfPieces;
+float dominoXPos;
 bool startDomino = false;
 bool startPendul = false;
-float dominoXPos = -400.0F;
 float dominoYPos = -100.0F;
 float pendulAngel = 0.0F;
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
 
 
 	// Calculate the position for the first piece  
-	dominoXPos = (2 * C_WINDOW_WIDTH - (numOfPieces * C_PIECE_WIDTH + (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES)) / 2 - 800;
+	dominoXPos = (2 * C_WINDOW_WIDTH - (numOfPieces * C_PIECE_WIDTH + (numOfPieces - 1) * (C_SPACE_BETWEEN_PIECES - C_PIECE_WIDTH))) / 2 - 800;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
