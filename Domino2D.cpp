@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
 
 
 	// Calculate the position for the first piece  
-	dominoXPos = (2 * C_WINDOW_WIDTH - ((numOfPieces) * (C_SPACE_BETWEEN_PIECES))) / 2 - 800;
+	dominoXPos = (2 * C_WINDOW_WIDTH - (numOfPieces * C_SPACE_BETWEEN_PIECES)) / 2 - C_WINDOW_WIDTH;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -222,20 +222,17 @@ void DestroyShaders(void) {
 glm::mat4 TranslThePoint(const glm::vec3& vec, const int& type = 0) { 
 	switch (type) {
 	case 0:
-	{
 		return glm::translate(glm::mat4(1.0f), -vec);
 		break;
-	}
+
 	case 1:
-	{
 		return glm::translate(glm::mat4(1.0f), vec);
 		break;
-	}
+	
 	default:
 		return glm::mat4(1);
 		std::cout << "[WARNING] Translatia a intrat pe default case\n";
 		break;
-
 	}
 }
 
@@ -271,7 +268,7 @@ void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatri
 void RenderFunction(void) {
 	pieceRotatePoint = glm::vec3(dominoXPos + C_PIECE_WIDTH, dominoYPos, 0.0F);
 	pendulRotatePoint = glm::vec3(suportPendulXPos , suportPendulYPos , 0.0F);
-	trans = glm::mat4(1);
+	trans = C_IDENTITY_MATRIX;
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	LoadUniformVar<int>(ProgramId, "windowHeight", C_WINDOW_HEIGHT);
