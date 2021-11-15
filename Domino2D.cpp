@@ -35,7 +35,7 @@ const float C_ANGLE_TO_ACTIVATE_NEXT_PIECE = 30.0F;
 // Domino piece params
 const float C_PIECE_HEIGHT = 120.0F;
 const float C_PIECE_WIDTH = 20.0F;
-const float C_SPACE_BETWEEN_PIECES = 80.0F;
+const float C_SPACE_BETWEEN_PIECES = 80.0F; // includes the width of the domino
 const float C_DOMINO_ANGLE_OFFSET = 5.0F;
 
 // Pendul params
@@ -43,6 +43,7 @@ const float C_SUPORT_PENDUL_X_COORD_OFFSET = 30.0F;
 const float C_SUPORT_PENDUL_Y_COORD_OFFSET = 250.0F;
 const float C_PENDUL_X_COORD_OFFSET = 150.0F;
 const float C_PENDUL_ANGLE_OFFSET = 5.0F;
+const float C_PENDUL_ANGLE_STOP= 90.0F;
 
 //////////////////////////////////////
 
@@ -56,21 +57,21 @@ float suportPendulYPos;
 glm::vec3 PendulRotatePoint;
 
 
-
 float angles[C_NUM_MAX_PIECES];
 int numOfPieces;
 float dominoXPos;
 bool startDomino = false;
 bool startPendul = false;
 float dominoYPos = -100.0F;
-float pendulAngel = 0.0F;
+float pendulAngle = 0.0F;
 
 enum Colors {
-	Black = 0,
+	Normal = 0,
 	Blue,
 	Red,
 	Green,
 	White,
+	Black,
 	Gradient,
 };
 
@@ -242,6 +243,7 @@ void Initialize(void) {
 
 	suportPendulYPos = dominoYPos + C_SUPORT_PENDUL_Y_COORD_OFFSET;
 	suportPendulXPos = dominoXPos - C_SUPORT_PENDUL_X_COORD_OFFSET;
+	pendulRotatePoint = glm::vec3(suportPendulXPos, suportPendulYPos, 0.0F);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 	CreateVBO();
@@ -254,6 +256,7 @@ void LoadUniformVar(const GLuint& programId, const std::string& name, T value) {
 	GLuint codColLocation = glGetUniformLocation(programId, name.c_str());
 	if (codColLocation == GL_FALSE) {
 		std::cout << "[ERROR] Fail to get the location!\n";
+		return;
 	}
 	glUniform1i(codColLocation, value);
 }
@@ -267,7 +270,6 @@ void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatri
 
 void RenderFunction(void) {
 	pieceRotatePoint = glm::vec3(dominoXPos + C_PIECE_WIDTH, dominoYPos, 0.0F);
-	pendulRotatePoint = glm::vec3(suportPendulXPos , suportPendulYPos , 0.0F);
 	trans = C_IDENTITY_MATRIX;
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -282,24 +284,14 @@ void RenderFunction(void) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 	glDrawArrays(GL_TRIANGLE_STRIP, 3, 3);
 
-	// axes 
-	// LoadUniformVar<int>(ProgramId, "codCol", Black);
-	// glDrawArrays(GL_LINES, 6, 4);
-
-	//Draw pendul support 
-	//LoadUniformVar<int>(ProgramId, "codCol", Black);
-	//glPointSize(30.0F);
-	// glDrawArrays(GL_POINTS, 14, 1);
-
-
 	// Draw pendul 
-	if (pendulAngel) {
+	if (pendulAngle) {
 		LoadUniformVar<int>(ProgramId, "codCol", White);
 	}
 	else {
 		LoadUniformVar<int>(ProgramId, "codCol", Black);
 	}
-	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngel), glm::vec3(0.0, 0.0, 1.0));
+	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngle), glm::vec3(0.0, 0.0, 1.0));
 	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pendulRotatePoint, 1) * matrRot * TranslThePoint(pendulRotatePoint, 0));
 	glEnable(GL_POINT_SMOOTH);
 	glPointSize(30.0F);
@@ -328,7 +320,7 @@ void RenderFunction(void) {
 				LoadUniformVar<int>(ProgramId, "codCol", Red);
 			}
 
-			pieceRotatePoint += glm::vec3(80.0F, 0.0F, 0.0F);
+			pieceRotatePoint += glm::vec3(C_SPACE_BETWEEN_PIECES, 0.0F, 0.0F);
 			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
 			trans *= glm::translate(glm::mat4(1.0f), glm::vec3(C_SPACE_BETWEEN_PIECES, 0.0F, 0.0F));
 			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pieceRotatePoint, 1) * matrRot * TranslThePoint(pieceRotatePoint, 0) * trans);
@@ -369,10 +361,10 @@ void AnglesUpdate(int input) {
 }
  
 void PendulUpdate (int input) {
-	if (startPendul == true && pendulAngel < C_STOP_ROTATION_ANGLE_LAST_PIECE) {
-		pendulAngel += C_PENDUL_ANGLE_OFFSET;
+	if (startPendul == true && pendulAngle < C_STOP_ROTATION_ANGLE_LAST_PIECE) {
+		pendulAngle += C_PENDUL_ANGLE_OFFSET;
 	} 
-	if (pendulAngel == C_STOP_ROTATION_ANGLE_LAST_PIECE) {
+	if (pendulAngle == C_PENDUL_ANGLE_STOP) {
 		startDomino = true;
 		glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);
 		return;
