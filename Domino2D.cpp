@@ -18,6 +18,16 @@
 const float C_PI = 3.141592f;
 const glm::mat4 C_IDENTITY_MATRIX = glm::mat4(1);
 
+struct RectangleShape {
+	float x;
+	float y;
+	float height;
+	float width;
+
+	RectangleShape(const float& x, const float& y, const float& height, const float& width) : x(x), y(y), height(height), width(width) {}
+	RectangleShape() : x(0.0F), y(0.0F), height(0.0F), width(0.0F) {}
+};
+
 // Window params
 const int C_WINDOW_WIDTH = 800;
 const int C_WINDOW_HEIGHT = 600;
@@ -32,19 +42,26 @@ const float C_STOP_ROTATION_ANGLE_LAST_PIECE = 90.0F;
 const float C_ANGLE_TO_ACTIVATE_NEXT_PIECE = 30.0F;
 
 // Domino piece params
-const float C_PIECE_HEIGHT = 120.0F;
-const float C_PIECE_WIDTH = 20.0F;
 const float C_SPACE_BETWEEN_PIECES = 80.0F; // includes the width of the domino
 const float C_DOMINO_ANGLE_OFFSET = 5.0F;
+
+// Table params
+const float C_TABLE_WIDTH = 15.0F;
+const float C_TABLE_OFFSET = 50.0F;
 
 // Pendul params
 const float C_SUPORT_PENDUL_X_COORD_OFFSET = 30.0F;
 const float C_SUPORT_PENDUL_Y_COORD_OFFSET = 250.0F;
 const float C_PENDUL_X_COORD_OFFSET = 150.0F;
 const float C_PENDUL_ANGLE_OFFSET = 5.0F;
-const float C_PENDUL_ANGLE_STOP= 90.0F;
+const float C_PENDUL_ANGLE_STOP = 90.0F;
+const float C_PENDUL_RESIZE = 1.0F;
 
 //////////////////////////////////////
+
+RectangleShape domino(0.0F, -100.0F, 120.0F, 20.0F);
+RectangleShape table;
+
 
 GLuint VaoId, VboId, ColorBufferId, ProgramId;
 glm::mat4 resizeMatrix, matrRot, trans;
@@ -57,11 +74,10 @@ glm::vec3 PendulRotatePoint;
 
 
 float angles[C_NUM_MAX_PIECES];
+float pendulSize = 30.0F;
 int numOfPieces;
-float dominoXPos;
 bool startDomino = false;
 bool startPendul = false;
-float dominoYPos = -100.0F;
 float pendulAngle = 0.0F;
 
 enum Colors {
@@ -108,7 +124,7 @@ int main(int argc, char* argv[]) {
 
 
 	// Calculate the position for the first piece  
-	dominoXPos = (2 * C_WINDOW_WIDTH - (numOfPieces * C_SPACE_BETWEEN_PIECES)) / 2 - C_WINDOW_WIDTH;
+	domino.x = (2 * C_WINDOW_WIDTH - (numOfPieces * C_SPACE_BETWEEN_PIECES)) / 2 - C_WINDOW_WIDTH;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -158,15 +174,20 @@ void CreateVBO(void) {
 	    0.0f,			 C_WINDOW_HEIGHT, 0.0f, 1.0f,
 
 	   // first domino piece
-	   dominoXPos,				   dominoYPos,				    0.0F, 1.0F,
-	   dominoXPos + C_PIECE_WIDTH, dominoYPos,				    0.0F, 1.0F,
-	   dominoXPos + C_PIECE_WIDTH, dominoYPos + C_PIECE_HEIGHT, 0.0F, 1.0F,
-	   dominoXPos,				   dominoYPos + C_PIECE_HEIGHT, 0.0F, 1.0F,
+	   domino.x,				  domino.y,				      0.0F, 1.0F,
+	   domino.x + domino.width, domino.y,				      0.0F, 1.0F,
+	   domino.x + domino.width, domino.y + domino.height, 0.0F, 1.0F,
+	   domino.x,				  domino.y + domino.height, 0.0F, 1.0F,
 
 	   // suport pendul center point
-	   suportPendulXPos,           suportPendulYPos,            0.0F, 1.0F,
+	   suportPendulXPos,          suportPendulYPos,           0.0F, 1.0F,
 	   // pendul center point 
-	   suportPendulXPos - C_PENDUL_X_COORD_OFFSET, suportPendulYPos, 0.0F, 1.0F
+	   suportPendulXPos - C_PENDUL_X_COORD_OFFSET, suportPendulYPos, 0.0F, 1.0F,
+ 	   // Draw the table
+	   table.x,					table.y,				  0.0F, 1.0F,
+	   table.x + table.width, table.y,				  0.0F, 1.0F,
+	   table.x + table.width, table.y + table.height, 0.0F, 1.0F,
+	   table.x,				    table.y + table.height, 0.0F, 1.0F,
 	};
 
 
@@ -230,9 +251,8 @@ glm::mat4 TranslThePoint(const glm::vec3& vec, const int& type = 0) {
 		break;
 	
 	default:
-		return glm::mat4(1);
 		std::cout << "[WARNING] Translatia a intrat pe default case\n";
-		break;
+		return C_IDENTITY_MATRIX;
 	}
 }
 
@@ -240,13 +260,17 @@ void Initialize(void) {
 
 	resizeMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.f / C_WINDOW_WIDTH, 1.f / C_WINDOW_HEIGHT, 1.0));
 
-	suportPendulYPos = dominoYPos + C_SUPORT_PENDUL_Y_COORD_OFFSET;
-	suportPendulXPos = dominoXPos - C_SUPORT_PENDUL_X_COORD_OFFSET;
+	suportPendulYPos = domino.y + C_SUPORT_PENDUL_Y_COORD_OFFSET;
+	suportPendulXPos = domino.x - C_SUPORT_PENDUL_X_COORD_OFFSET;
 	pendulRotatePoint = glm::vec3(suportPendulXPos, suportPendulYPos, 0.0F);
 
+	table.x = domino.x - C_TABLE_OFFSET;
+	table.y = domino.y - C_TABLE_WIDTH;
+	table.height = C_TABLE_WIDTH;
+	table.width = (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES + (2 * C_TABLE_OFFSET) + (domino.height + domino.width);
+
+
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
-
-
 	CreateVBO();
 	CreateShaders();
 }
@@ -270,7 +294,7 @@ void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatri
 }
 
 void RenderFunction(void) {
-	pieceRotatePoint = glm::vec3(dominoXPos + C_PIECE_WIDTH, dominoYPos, 0.0F);
+	pieceRotatePoint = glm::vec3(domino.x + domino.width, domino.y, 0.0F);
 	trans = C_IDENTITY_MATRIX;
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -285,42 +309,40 @@ void RenderFunction(void) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 	glDrawArrays(GL_TRIANGLE_STRIP, 3, 3);
 
+	// Draw table
+	LoadUniformVar<int>(ProgramId, "codCol", Black);
+	glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
 	// Draw pendul 
-	if (pendulAngle) {
-		LoadUniformVar<int>(ProgramId, "codCol", White);
+	if (pendulSize > 0)
+	{
+		if (pendulAngle) {
+			LoadUniformVar<int>(ProgramId, "codCol", White);
+		}
+		else {
+			LoadUniformVar<int>(ProgramId, "codCol", Black);
+		}
+		matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngle), glm::vec3(0.0, 0.0, 1.0));
+		Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pendulRotatePoint, 1) * matrRot * TranslThePoint(pendulRotatePoint, 0));
+		glEnable(GL_POINT_SMOOTH);
+		glPointSize(pendulSize);
+		glDrawArrays(GL_POINTS, 15, 1);
 	}
-	else {
-		LoadUniformVar<int>(ProgramId, "codCol", Black);
-	}
-	matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(pendulAngle), glm::vec3(0.0, 0.0, 1.0));
-	Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pendulRotatePoint, 1) * matrRot * TranslThePoint(pendulRotatePoint, 0));
-	glEnable(GL_POINT_SMOOTH);
-	glPointSize(30.0F);
-	glDrawArrays(GL_POINTS, 15, 1);
-
 
 	// Draw domino pieces
 	for (int i = 0; i < numOfPieces; i++) {
+		if (angles[i] == 0) {
+			LoadUniformVar<int>(ProgramId, "codCol", Blue);
+		}
+		else {
+			LoadUniformVar<int>(ProgramId, "codCol", Red);
+		}
 		if (i == 0) {
-			if (angles[i] == 0) {
-				LoadUniformVar<int>(ProgramId, "codCol", Blue);
-			}
-			else {
-				LoadUniformVar<int>(ProgramId, "codCol", Red);
-			}
 			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
 			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pieceRotatePoint, 1) * matrRot * TranslThePoint(pieceRotatePoint, 0));
 			glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
 
 		}
 		else {
-			if (angles[i] == 0) {
-				LoadUniformVar<int>(ProgramId, "codCol", Blue);
-			}
-			else {
-				LoadUniformVar<int>(ProgramId, "codCol", Red);
-			}
-
 			pieceRotatePoint += glm::vec3(C_SPACE_BETWEEN_PIECES, 0.0F, 0.0F);
 			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
 			trans *= glm::translate(glm::mat4(1.0f), glm::vec3(C_SPACE_BETWEEN_PIECES, 0.0F, 0.0F));
@@ -328,7 +350,6 @@ void RenderFunction(void) {
 			glDrawArrays(GL_TRIANGLE_FAN, 10, 4);
 		}
 	}
-
 	glutPostRedisplay();
 	glFlush();
 }
@@ -353,10 +374,12 @@ void AnglesUpdate(int input) {
 			(numOfPieces - 1 == i && numOfPieces > 1 && angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE
 									&& angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||	 // for last piece
 			(startDomino == 1 && numOfPieces == 1 && angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||				 // edge case, when it's a single piece 
-			(angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE && angles[i] < C_STOP_ROTATION_ANGLE))           // for the others pieces 
-		{
+			(angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE && angles[i] < C_STOP_ROTATION_ANGLE)) {          // for the others pieces 
 			angles[i] += C_DOMINO_ANGLE_OFFSET;
 		}
+	}
+	if (startDomino == true && pendulSize > 0) {
+		pendulSize -= C_PENDUL_RESIZE;
 	}
 	glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);
 }
