@@ -15,7 +15,6 @@
 
 #include "loadShaders.h"
 
-
 const float C_PI = 3.141592f;
 const glm::mat4 C_IDENTITY_MATRIX = glm::mat4(1);
 
@@ -246,6 +245,8 @@ void Initialize(void) {
 	pendulRotatePoint = glm::vec3(suportPendulXPos, suportPendulYPos, 0.0F);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+
+
 	CreateVBO();
 	CreateShaders();
 }
