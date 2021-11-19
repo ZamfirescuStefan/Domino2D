@@ -1,6 +1,6 @@
-# Simulation for a Domino 2D in OpenGl  
+# Domino 2D in OpenGL  
 
-I made a simulation of a domino 2D game in OpenGl, using translations and rotations.
+I made a simulation of a domino 2D game in OpenGL, using translations and rotations.
 The project it's implemented in C++ language.
 
 Here you can see a demo of the simulation:
@@ -22,4 +22,4 @@ https://user-images.githubusercontent.com/61266038/142703981-d2a432ac-d539-45b8-
 - glew
 - glm
 
-*This program was developed as a homework for the Computer Graphics at the University of Bucharest, Faculty of Mathematics and Computer Science, 2020-2021.*
+*This program was developed as homework for the Computer Graphics at the University of Bucharest, Faculty of Mathematics and Computer Science, 2021-2022.*
