@@ -5,7 +5,7 @@ The project it's implemented in C++ language.
 
 Here you can see a demo of the simulation:
 
-https://user-images.githubusercontent.com/61266038/142703569-6c586c95-fb86-4e1f-9aff-684f7b8087fd.mp4
+https://user-images.githubusercontent.com/61266038/142703981-d2a432ac-d539-45b8-9a0d-0822a964be88.mp4
 
 
 **Nice touches:**
