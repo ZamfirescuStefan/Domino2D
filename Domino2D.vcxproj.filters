@@ -23,8 +23,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="temaVert.shader" />
-    <None Include="temaFrag.shader" />
+    <None Include="domino2DVert.shader" />
+    <None Include="domino2DFrag.shader" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="loadShaders.h">

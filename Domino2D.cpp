@@ -171,20 +171,20 @@ void CreateVBO(void) {
 	    0.0f,			 C_WINDOW_HEIGHT, 0.0f, 1.0f,
 
 	   // first domino piece
-	   domino.x,				  domino.y,				      0.0F, 1.0F,
-	   domino.x + domino.width, domino.y,				      0.0F, 1.0F,
+	   domino.x,				domino.y,			      0.0F, 1.0F,
+	   domino.x + domino.width, domino.y,    		      0.0F, 1.0F,
 	   domino.x + domino.width, domino.y + domino.height, 0.0F, 1.0F,
-	   domino.x,				  domino.y + domino.height, 0.0F, 1.0F,
-
-	   // suport pendul center point
-	   suportPendulXPos,          suportPendulYPos,           0.0F, 1.0F,
+	   domino.x,				domino.y + domino.height, 0.0F, 1.0F,
+	    
+	   // suport pendul
+	   suportPendulXPos,        suportPendulYPos,         0.0F, 1.0F,
 	   // pendul center point 
 	   suportPendulXPos - C_PENDUL_X_COORD_OFFSET, suportPendulYPos, 0.0F, 1.0F,
  	   // Draw the table
-	   table.x,					table.y,				  0.0F, 1.0F,
+	   table.x,				  table.y,				  0.0F, 1.0F,
 	   table.x + table.width, table.y,				  0.0F, 1.0F,
 	   table.x + table.width, table.y + table.height, 0.0F, 1.0F,
-	   table.x,				    table.y + table.height, 0.0F, 1.0F,
+	   table.x,				  table.y + table.height, 0.0F, 1.0F,
 	};
 
 
@@ -228,7 +228,7 @@ void DestroyVBO(void) {
 }
 
 void CreateShaders(void) {
-	ProgramId = LoadShaders("temaVert.shader", "temaFrag.shader");
+	ProgramId = LoadShaders("domino2DVert.shader", "domino2DFrag.shader");
 	glUseProgram(ProgramId);
 }
 
@@ -277,6 +277,7 @@ void Initialize(void) {
 	CreateShaders();
 }
 
+// Wrapper to load a variable in shader 
 template <class T>
 void LoadUniformVar(const GLuint& programId, const std::string& name, T value) {
 
@@ -289,7 +290,7 @@ void LoadUniformVar(const GLuint& programId, const std::string& name, T value) {
 }
 
 
-// Wrapper for this operation 
+// Wrapper for loading a Maxtrix 4X4 in shader 
 void Load4x4MatrixToVertShader(const std::string& iName, const glm::mat4& iMatrix) {
 	GLuint myMatrixLocation = glGetUniformLocation(ProgramId, iName.c_str());
 	glUniformMatrix4fv(myMatrixLocation, 1, GL_FALSE, &iMatrix[0][0]);
@@ -338,6 +339,7 @@ void RenderFunction(void) {
 		else {
 			LoadUniformVar<int>(ProgramId, "codCol", Red);
 		}
+
 		if (i == 0) {
 			matrRot = glm::rotate(glm::mat4(1.0f), glm::radians(-angles[i]), glm::vec3(0.0, 0.0, 1.0));
 			Load4x4MatrixToVertShader("myMatrix", TranslThePoint(pieceRotatePoint, 1) * matrRot * TranslThePoint(pieceRotatePoint, 0));
@@ -369,13 +371,12 @@ void MouseAction(int button, int state, int x, int y) {
 }
 
 void AnglesUpdate(int input) {
-	glutPostRedisplay();
 	for (int i = 0; i < numOfPieces; i++) {
 		if (
 			(true == startDomino && 0 == i && angles[i] < C_STOP_ROTATION_ANGLE) ||       // for first piece 
 			(numOfPieces - 1 == i && numOfPieces > 1 && angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE
 									&& angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||	 // for last piece
-			(startDomino == 1 && numOfPieces == 1 && angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||				 // edge case, when it's a single piece 
+			(startDomino == true && numOfPieces == 1 && angles[i] < C_STOP_ROTATION_ANGLE_LAST_PIECE) ||				 // edge case, when it's a single piece 
 			(angles[i - 1] > C_ANGLE_TO_ACTIVATE_NEXT_PIECE && angles[i] < C_STOP_ROTATION_ANGLE)) {          // for the others pieces 
 			angles[i] += C_DOMINO_ANGLE_OFFSET;
 		}
@@ -383,6 +384,7 @@ void AnglesUpdate(int input) {
 	if (startDomino == true && pendulSize > 0) {
 		pendulSize -= C_PENDUL_RESIZE;
 	}
+	glutPostRedisplay();
 	glutTimerFunc(C_REFRESH_TIME, AnglesUpdate, 0);
 }
  

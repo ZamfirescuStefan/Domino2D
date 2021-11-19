@@ -23,8 +23,8 @@
     <ClCompile Include="loadShaders.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="temaFrag.shader" />
-    <None Include="temaVert.shader" />
+    <None Include="domino2DFrag.shader" />
+    <None Include="domino2DVert.shader" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="loadShaders.h" />
@@ -130,6 +130,10 @@
       <AdditionalIncludeDirectories>$(ProjectDir)dependencies\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
