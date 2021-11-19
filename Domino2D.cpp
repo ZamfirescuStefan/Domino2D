@@ -46,7 +46,7 @@ const float C_SPACE_BETWEEN_PIECES = 80.0F; // includes the width of the domino
 const float C_DOMINO_ANGLE_OFFSET = 5.0F;
 
 // Table params
-const float C_TABLE_WIDTH = 15.0F;
+const float C_TABLE_WIDTH = 40.0F;
 const float C_TABLE_OFFSET = 50.0F;
 
 // Pendul params
@@ -122,9 +122,6 @@ int main(int argc, char* argv[]) {
 	}
 	numOfPieces = std::stoi(input);
 
-
-	// Calculate the position for the first piece  
-	domino.x = (2 * C_WINDOW_WIDTH - (numOfPieces * C_SPACE_BETWEEN_PIECES)) / 2 - C_WINDOW_WIDTH;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -260,14 +257,19 @@ void Initialize(void) {
 
 	resizeMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.f / C_WINDOW_WIDTH, 1.f / C_WINDOW_HEIGHT, 1.0));
 
+	// Calculate the position for the first piece  
+	domino.x = (2 * C_WINDOW_WIDTH - (numOfPieces * C_SPACE_BETWEEN_PIECES)) / 2 - C_WINDOW_WIDTH;
+
 	suportPendulYPos = domino.y + C_SUPORT_PENDUL_Y_COORD_OFFSET;
 	suportPendulXPos = domino.x - C_SUPORT_PENDUL_X_COORD_OFFSET;
 	pendulRotatePoint = glm::vec3(suportPendulXPos, suportPendulYPos, 0.0F);
 
-	table.x = domino.x - C_TABLE_OFFSET;
+	//table.x = domino.x - C_TABLE_OFFSET;
+	// table.width = (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES + (2 * C_TABLE_OFFSET) + (domino.height + domino.width);
+	table.x = -C_WINDOW_WIDTH;
 	table.y = domino.y - C_TABLE_WIDTH;
 	table.height = C_TABLE_WIDTH;
-	table.width = (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES + (2 * C_TABLE_OFFSET) + (domino.height + domino.width);
+	table.width = 2 * C_WINDOW_WIDTH;
 
 
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
