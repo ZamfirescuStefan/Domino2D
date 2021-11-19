@@ -46,7 +46,7 @@ const float C_SPACE_BETWEEN_PIECES = 80.0F; // includes the width of the domino
 const float C_DOMINO_ANGLE_OFFSET = 5.0F;
 
 // Table params
-const float C_TABLE_WIDTH = 40.0F;
+const float C_TABLE_WIDTH = 15.0F;
 const float C_TABLE_OFFSET = 50.0F;
 
 // Pendul params
@@ -264,12 +264,12 @@ void Initialize(void) {
 	suportPendulXPos = domino.x - C_SUPORT_PENDUL_X_COORD_OFFSET;
 	pendulRotatePoint = glm::vec3(suportPendulXPos, suportPendulYPos, 0.0F);
 
-	//table.x = domino.x - C_TABLE_OFFSET;
-	// table.width = (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES + (2 * C_TABLE_OFFSET) + (domino.height + domino.width);
-	table.x = -C_WINDOW_WIDTH;
+	table.x = domino.x - C_TABLE_OFFSET;
+	table.width = (numOfPieces - 1) * C_SPACE_BETWEEN_PIECES + (2 * C_TABLE_OFFSET) + (domino.height + domino.width);
+	// table.x = -C_WINDOW_WIDTH;
 	table.y = domino.y - C_TABLE_WIDTH;
 	table.height = C_TABLE_WIDTH;
-	table.width = 2 * C_WINDOW_WIDTH;
+	// table.width = 2 * C_WINDOW_WIDTH;
 
 
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
