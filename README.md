@@ -1,7 +1,7 @@
 # Domino 2D in OpenGL  
 
 I made a simulation of a domino 2D game in OpenGL, using translations and rotations.
-The project it's implemented in C++ language.
+The project is implemented in C++ language.
 
 Here you can see a demo of the simulation:
 
